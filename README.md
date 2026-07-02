@@ -429,3 +429,25 @@ msp,worse,0,0.712,0.481,0.184,0.092,0.821
 entropy,worse,0,0.728,0.496,0.177,0.087,0.821
 aum,worse,0,0.803,0.586,0.142,0.071,0.821
 pred_desc,worse,0,0.819,0.604,0.136,0.068,0.821
+
+## References
+
+[1] J. Wei, Z. Zhu, H. Cheng, T. Liu, G. Niu, and Y. Liu.  
+**Learning with Noisy Labels Revisited: A Study Using Real-World Human Annotations.**  
+ICLR, 2022. arXiv:2110.12088.
+
+[2] S. Swayamdipta, R. Schwartz, N. A. Smith, and Y. Choi.  
+**Dataset Cartography: Mapping and Diagnosing Datasets with Training Dynamics.**  
+EMNLP, 2020.
+
+[3] G. Pleiss, T. Zhang, E. R. Elibol, and K. Q. Weinberger.  
+**Identifying Mislabeled Data using the Area Under the Margin Ranking.**  
+NeurIPS, 2020.
+
+[4] P. Maini, S. Garg, Z. C. Lipton, and J. Z. Kolter.  
+**Characterizing Optimization Trajectories under Label Noise.**  
+ICML, 2024.
+
+[5] S. Qian, C. M. D. Sa, and C. Cardie.  
+**MIND: Decoupling Model-Induced Label Noise via Latent Manifold Disentanglement.**  
+arXiv:2605.16081, 2026.
