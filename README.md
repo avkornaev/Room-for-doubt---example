@@ -26,49 +26,48 @@ The project aims to convert training dynamics into useful uncertainty indicators
 
 Let
 
-[
-\mathcal{D} = {(x_i, \tilde{y}*i)}*{i=1}^{N}
-]
+$$
+\mathcal{D} = \{(x_i, \tilde{y}_i)\}_{i=1}^{N}
+$$
 
-be a dataset with possibly noisy labels, where (x_i) is an input image and (\tilde{y}_i) is the observed label.
+be a dataset with possibly noisy labels, where $x_i$ is an input image and $\tilde{y}_i$ is the observed label.
 
 During training, each sample produces a temporal trajectory:
 
-[
-\tau_i = {q_i^{(t)}}_{t=1}^{T}.
-]
+$$
+\tau_i = \{q_i^{(t)}\}_{t=1}^{T}.
+$$
 
 In this project, the trajectory is intentionally represented by simple primitive signals, such as per-sample loss and predicted class probabilities. More complex descriptors are computed later, outside the training loop.
 
 A trajectory can be compressed into a descriptor vector:
 
-[
+$$
 s_i = A(\tau_i),
-]
+$$
 
 for example:
 
-[
-s_i =
-[
-\mathrm{AUM}_i,
-\mathrm{MeanConf}_i,
-\mathrm{VarConf}_i,
+$$
+s_i = \begin{bmatrix}
+\mathrm{AUM}_i \\
+\mathrm{MeanConf}_i \\
+\mathrm{VarConf}_i \\
 \mathrm{Forgetting}_i
-].
-]
+\end{bmatrix}.
+$$
 
 The central question is whether a final frozen representation
 
-[
+$$
 h_i = f_\theta(x_i)
-]
+$$
 
 contains enough information to predict this historical descriptor:
 
-[
+$$
 g_\phi(h_i) \approx s_i.
-]
+$$
 
 If this is possible, then training dynamics can be distilled into an inference-time uncertainty estimator.
 
@@ -137,18 +136,17 @@ During training, do not compute every possible metric inside the training loop. 
 
 Minimal per-sample logging:
 
-[
-q_i^{(t)} =
-[
-\ell_i^{(t)},
+$$
+q_i^{(t)} = \begin{bmatrix}
+\ell_i^{(t)} \\
 p_i^{(t)}
-],
-]
+\end{bmatrix},
+$$
 
 where:
 
-* (\ell_i^{(t)}) is the loss for sample (x_i) at epoch (t);
-* (p_i^{(t)} \in \mathbb{R}^{C}) is the predicted probability vector over classes.
+* $\ell_i^{(t)}$ is the loss for sample $x_i$ at epoch $t$;
+* $p_i^{(t)} \in \mathbb{R}^{C}$ is the predicted probability vector over classes.
 
 The log should preserve:
 
@@ -165,89 +163,51 @@ Examples:
 
 ### Assigned-label confidence
 
-[
-\mathrm{Conf}_i^{(t)}
-=====================
-
-p_i^{(t)}(\tilde{y}_i).
-]
+$$
+\mathrm{Conf}_i^{(t)} = p_i^{(t)}(\tilde{y}_i).
+$$
 
 ### Maximum softmax probability
 
-[
-\mathrm{MSP}_i^{(t)}
-====================
-
-\max_k p_i^{(t)}(k).
-]
+$$
+\mathrm{MSP}_i^{(t)} = \max_k p_i^{(t)}(k).
+$$
 
 ### Assigned-label margin
 
 If full probabilities are stored, a log-probability margin can be computed as:
 
-[
-m_i^{(t)}
-=========
-
-## \log(p_i^{(t)}(\tilde{y}_i) + \epsilon)
-
-\max_{k \neq \tilde{y}_i}
-\log(p_i^{(t)}(k) + \epsilon).
-]
+$$
+m_i^{(t)} = \log(p_i^{(t)}(\tilde{y}_i) + \epsilon) - \max_{k \neq \tilde{y}_i} \log(p_i^{(t)}(k) + \epsilon).
+$$
 
 This is equivalent to the corresponding logit margin up to numerical precision.
 
 ### Area Under the Margin
 
-[
-\mathrm{AUM}_i
-==============
-
-\frac{1}{T}
-\sum_{t=1}^{T}
-m_i^{(t)}.
-]
+$$
+\mathrm{AUM}_i = \frac{1}{T} \sum_{t=1}^{T} m_i^{(t)}.
+$$
 
 ### Confidence variability
 
-[
-\mathrm{VarConf}_i
-==================
-
-\mathrm{Std}_{t}
-[
-p_i^{(t)}(\tilde{y}_i)
-].
-]
+$$
+\mathrm{VarConf}_i = \mathrm{Std}_{t} \left[ p_i^{(t)}(\tilde{y}_i) \right].
+$$
 
 ### Forgetting count
 
 Let
 
-[
-c_i^{(t)}
-=========
-
-\mathbb{1}
-[
-\arg\max_k p_i^{(t)}(k) = \tilde{y}_i
-].
-]
+$$
+c_i^{(t)} = \mathbb{1} \left[ \arg\max_k p_i^{(t)}(k) = \tilde{y}_i \right].
+$$
 
 Then
 
-[
-\mathrm{Forgetting}_i
-=====================
-
-\sum_{t=1}^{T-1}
-\mathbb{1}
-[
-c_i^{(t)} = 1
-\land
-c_i^{(t+1)} = 0
-].
-]
+$$
+\mathrm{Forgetting}_i = \sum_{t=1}^{T-1} \mathbb{1} \left[ c_i^{(t)} = 1 \land c_i^{(t+1)} = 0 \right].
+$$
 
 This design keeps the training loop simple and makes descriptor design flexible.
 
@@ -283,21 +243,21 @@ The main evaluation target is noisy-label detection and uncertainty ranking.
 
 After Stage 1, each sample has a descriptor vector:
 
-[
+$$
 s_i = A(\tau_i).
-]
+$$
 
 Then freeze the trained encoder and extract final representations:
 
-[
+$$
 h_i = f_\theta(x_i).
-]
+$$
 
 Train a lightweight descriptor predictor:
 
-[
+$$
 g_\phi(h_i) = \hat{s}_i.
-]
+$$
 
 The goal is to predict post-hoc training-dynamics descriptors without access to the full training trajectory.
 
@@ -305,9 +265,9 @@ This tests whether historical learning behavior is encoded in the final represen
 
 The predicted descriptor vector can be converted into an uncertainty score:
 
-[
+$$
 u_i = U(\hat{s}_i).
-]
+$$
 
 The score may be:
 
@@ -319,16 +279,9 @@ The score may be:
 
 A simple first version may combine normalized predicted descriptors:
 
-[
-u_i =
-\alpha_1(-\widehat{\mathrm{AUM}}_i)
-+
-\alpha_2\widehat{\mathrm{VarConf}}_i
-+
-\alpha_3\widehat{\mathrm{Forgetting}}_i
-+
-\alpha_4(1-\widehat{\mathrm{MeanConf}}_i).
-]
+$$
+u_i = \alpha_1(-\widehat{\mathrm{AUM}}_i) + \alpha_2\widehat{\mathrm{VarConf}}_i + \alpha_3\widehat{\mathrm{Forgetting}}_i + \alpha_4(1-\widehat{\mathrm{MeanConf}}_i).
+$$
 
 This formula is not fixed. It is only a reasonable starting point.
 
@@ -336,28 +289,21 @@ A possible additional experiment is uncertainty-aware prediction aggregation.
 
 For weak test-time augmentations or dropout samples,
 
-[
-p_1, p_2, ..., p_K
-]
+$$
+p_1, p_2, \dots, p_K
+$$
 
 can be combined using uncertainty-dependent weights:
 
-[
-\bar{p}(y \mid x)
-=================
-
-\frac{
-\sum_{k=1}^{K} w_k p_k(y \mid x)
-}{
-\sum_{k=1}^{K} w_k
-},
-]
+$$
+\bar{p}(y \mid x) = \frac{\sum_{k=1}^{K} w_k p_k(y \mid x)}{\sum_{k=1}^{K} w_k},
+$$
 
 where
 
-[
+$$
 w_k = \exp(-\tau u_k)
-]
+$$
 
 or another decreasing function of predicted uncertainty.
 
@@ -369,21 +315,21 @@ The question is whether uncertain augmented predictions should contribute less t
 
 The deterministic descriptor predictor estimates one vector:
 
-[
+$$
 g_\phi(h_i) = \hat{s}_i.
-]
+$$
 
 The advanced extension studies a probabilistic alternative:
 
-[
+$$
 p_\psi(s_i \mid h_i).
-]
+$$
 
 A conditional flow-matching model can generate multiple plausible descriptor vectors for the same representation:
 
-[
-\hat{s}_i^{(1)}, \hat{s}_i^{(2)}, ..., \hat{s}_i^{(M)}.
-]
+$$
+\hat{s}_i^{(1)}, \hat{s}_i^{(2)}, \dots, \hat{s}_i^{(M)}.
+$$
 
 The variance or disagreement among generated descriptors may provide an additional uncertainty signal.
 
@@ -424,87 +370,3 @@ msp,worse,0,0.712,0.481,0.184,0.092,0.821
 entropy,worse,0,0.728,0.496,0.177,0.087,0.821
 aum,worse,0,0.803,0.586,0.142,0.071,0.821
 pred_desc,worse,0,0.819,0.604,0.136,0.068,0.821
-```
-
-Raw trajectory logs may be stored with higher precision if needed, but reports and compact tables should use rounded values.
-
-The goal is not to preserve excessive numerical detail. The goal is to preserve enough information for interpretation, comparison, and paper writing.
-
----
-
-## Experiment Reports
-
-The `report.md` file is a mandatory artifact for meaningful experiments.
-
-It should explain:
-
-* what was tested;
-* why the experiment was needed;
-* which configuration was used;
-* which dataset split was used;
-* what the main results were;
-* what failed;
-* what can be claimed in the paper;
-* what should be tested next.
-
-These reports are expected to be used later for ChatGPT-assisted analysis and for writing the Results section.
-
-A good report is more valuable than a large unstructured log.
-
----
-
-## Implementation Preferences
-
-The project should use a modern research-code stack:
-
-* PyTorch;
-* PyTorch Lightning;
-* Hydra;
-* local experiment outputs;
-* Markdown reports;
-* compact CSV tables;
-* plots for analysis and paper figures.
-
-No external experiment tracker is required in the first version.
-
-The implementation should remain flexible enough for students to make reasonable design decisions and compare alternatives.
-
-Detailed repository structure, exact scripts, config hierarchy, and implementation rules should be specified in `AGENTS.md` or planned by Codex, not overdefined in this README.
-
----
-
-## Minimal Success Criteria
-
-The project is successful if it produces:
-
-1. a working noisy-label training pipeline;
-2. primitive per-sample training logs;
-3. offline-computed trajectory descriptors;
-4. post-hoc uncertainty baselines;
-5. a descriptor-distillation model;
-6. inference-time uncertainty scores;
-7. reproducible reports and compact result tables;
-8. paper-ready figures and experimental summaries.
-
-The conditional flow-matching model is an advanced extension. It is valuable if time allows, but the core contribution should remain clear even without it.
-
----
-
-## Expected Final Outcome
-
-The final repository should support the research claim:
-
-> Training dynamics contain useful information about uncertainty, and part of this information can be distilled into inference-time predictors.
-
-The final paper should honestly report both positive and negative results.
-
-Important possible outcomes:
-
-* training-dynamics descriptors outperform static confidence scores;
-* descriptor distillation works only for some descriptors;
-* predicted descriptors improve noisy-label ranking but not calibration;
-* uncertainty-weighted TTA/dropout helps only in limited regimes;
-* flow matching adds useful variance information;
-* flow matching does not justify its complexity.
-
-Negative results are acceptable if they are well documented and scientifically interpretable.
