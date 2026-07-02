@@ -72,9 +72,9 @@ for example:
 $$
 s_i =
 \begin{bmatrix}
-\mathrm{AUM}_i \
-\mathrm{MeanConf}_i \
-\mathrm{VarConf}_i \
+\mathrm{AUM}_i, \
+\mathrm{MeanConf}_i, \
+\mathrm{VarConf}_i, \
 \mathrm{Forgetting}_i
 \end{bmatrix}.
 $$
