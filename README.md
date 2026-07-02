@@ -27,20 +27,41 @@ The project aims to convert training dynamics into useful uncertainty indicators
 Let
 
 $$
-\mathcal{D} = \{(x_i, \tilde{y}_i)\}_{i=1}^{N}
+\mathcal{D} = {(x_i, \tilde{y}*i)}*{i=1}^{N}
 $$
 
 be a dataset with possibly noisy labels, where $x_i$ is an input image and $\tilde{y}_i$ is the observed label.
 
-During training, each sample produces a temporal trajectory:
+During training, each sample produces a temporal learning trajectory:
 
 $$
-\tau_i = \{q_i^{(t)}\}_{t=1}^{T}.
+\tau_i = {q_i^{(t)}}_{t=1}^{T}.
 $$
 
-In this project, the trajectory is intentionally represented by simple primitive signals, such as per-sample loss and predicted class probabilities. More complex descriptors are computed later, outside the training loop.
+In the simplest implementation, the logged state $q_i^{(t)}$ contains primitive signals such as per-sample loss and predicted class probabilities:
 
-A trajectory can be compressed into a descriptor vector:
+$$
+q_i^{(t)} =
+\left[
+\ell_i^{(t)},,
+p_i^{(t)}(1),,
+p_i^{(t)}(2),,
+\dots,,
+p_i^{(t)}(C)
+\right].
+$$
+
+Thus, each sample is represented not only by its final prediction, but by a whole trajectory matrix:
+
+$$
+\tau_i \in \mathbb{R}^{T \times (C+1)}.
+$$
+
+The main hypothesis is that uncertainty, ambiguity, or label noise may be encoded in the **shape of this trajectory**, not only in its final value.
+
+There are several possible ways to use $\tau_i$.
+
+First, the trajectory can be compressed into hand-crafted statistical descriptors:
 
 $$
 s_i = A(\tau_i),
@@ -49,27 +70,65 @@ $$
 for example:
 
 $$
-s_i = \begin{bmatrix}
-\mathrm{AUM}_i \\
-\mathrm{MeanConf}_i \\
-\mathrm{VarConf}_i \\
+s_i =
+\begin{bmatrix}
+\mathrm{AUM}_i \
+\mathrm{MeanConf}_i \
+\mathrm{VarConf}_i \
 \mathrm{Forgetting}_i
 \end{bmatrix}.
 $$
 
-The central question is whether a final frozen representation
+These descriptors are interpretable and provide a strong first baseline.
+
+However, this is not the only possible representation. The full trajectory may contain information that is lost when averaging across epochs or reducing dynamics to a few scalar statistics. Therefore, the project also allows learned trajectory representations:
 
 $$
-h_i = f_\theta(x_i)
+r_i = E_\psi(\tau_i),
 $$
 
-contains enough information to predict this historical descriptor:
+where $E_\psi$ may be a small sequence encoder, temporal model, or generative model trained on the collected dynamics.
+
+The uncertainty score may then be constructed from either hand-crafted descriptors, learned trajectory representations, or both:
+
+$$
+u_i = U(s_i, r_i).
+$$
+
+For inference-time use, the project studies whether this historical information can be distilled from a final representation:
+
+$$
+h_i = f_\theta(x_i).
+$$
+
+A simple version predicts descriptor statistics:
 
 $$
 g_\phi(h_i) \approx s_i.
 $$
 
-If this is possible, then training dynamics can be distilled into an inference-time uncertainty estimator.
+A more expressive version may predict a learned trajectory representation:
+
+$$
+g_\phi(h_i) \approx r_i,
+$$
+
+or model a conditional distribution over descriptors or trajectory-derived representations:
+
+$$
+p_\psi(s_i \mid h_i)
+\quad \text{or} \quad
+p_\psi(r_i \mid h_i).
+$$
+
+This is where conditional flow matching may become useful: not as a replacement for simple descriptors, but as a way to model uncertainty over possible training-dynamics summaries.
+
+Therefore, the broader research question is:
+
+> Can the temporal behavior of a sample during training — represented either by compact descriptors or by learned trajectory models — provide uncertainty signals that are stronger than static final-output confidence, and can these signals be distilled for inference-time use?
+
+The descriptor-based approach is the minimal interpretable baseline. The full-trajectory and flow-matching approaches are advanced extensions that test whether richer temporal information improves uncertainty estimation.
+
 
 ---
 
