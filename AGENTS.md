@@ -18,7 +18,6 @@ Core idea:
 
 The first version focuses on noisy-label uncertainty, especially CIFAR-10N and optionally CIFAR-100N.
 
-Do not expand the project into broad OOD detection unless explicitly requested.
 
 ---
 
